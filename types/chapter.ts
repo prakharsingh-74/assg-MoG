@@ -16,6 +16,6 @@ export type Subject = "Physics" | "Chemistry" | "Mathematics"
 export interface Filters {
   classes: string[]
   units: string[]
-  status: string[]
+  status: string // Changed from string[] to string
   weakChapters: boolean
 }

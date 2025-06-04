@@ -21,6 +21,7 @@ import {
   getUniqueUnits,
 } from "@/utils/dataProcessing"
 import Image from "next/image"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const subjects = [
   { key: "Physics" as Subject, name: "Physics PYQs", icon: "/icons/physics.png", color: "orange" },
@@ -33,11 +34,12 @@ export default function JEEMainDashboard() {
   const [filters, setFilters] = useState<Filters>({
     classes: [],
     units: [],
-    status: [],
+    status: "", // Changed from array to string
     weakChapters: false,
   })
   const [sortBy, setSortBy] = useState<"name" | "questions" | "solved">("name")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // Filter chapters by active subject
   const currentChapters = useMemo(() => {
@@ -62,8 +64,8 @@ export default function JEEMainDashboard() {
         return false
       }
 
-      // Status filter
-      if (filters.status.length > 0 && !filters.status.includes(chapter.status)) {
+      // Status filter (single selection)
+      if (filters.status && filters.status !== chapter.status) {
         return false
       }
 
@@ -113,6 +115,9 @@ export default function JEEMainDashboard() {
     setFilters((prev) => {
       if (filterType === "weakChapters") {
         return { ...prev, [filterType]: value as boolean }
+      } else if (filterType === "status") {
+        // For status, toggle selection (single selection)
+        return { ...prev, [filterType]: prev.status === value ? "" : (value as string) }
       } else {
         const currentValues = prev[filterType] as string[]
         const newValues = currentValues.includes(value as string)
@@ -127,7 +132,7 @@ export default function JEEMainDashboard() {
     setFilters({
       classes: [],
       units: [],
-      status: [],
+      status: "", // Changed from array to string
       weakChapters: false,
     })
   }
@@ -145,9 +150,11 @@ export default function JEEMainDashboard() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white dark:bg-gray-900">
       {/* Left Sidebar */}
-      <div className="w-[320px] bg-gray-50 border-r border-gray-200 p-4">
+      <div
+        className={`${sidebarCollapsed ? "w-20" : "w-[320px]"} bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 transition-all duration-300`}
+      >
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-3">
             <div className="w-8 h-8 rounded-full overflow-hidden">
@@ -159,9 +166,13 @@ export default function JEEMainDashboard() {
                 className="w-full h-full object-cover"
               />
             </div>
-            <span className="font-semibold text-xl text-gray-900">JEE Main</span>
+            {!sidebarCollapsed && (
+              <span className="font-semibold text-xl text-gray-900 dark:text-gray-100">JEE Main</span>
+            )}
           </div>
-          <p className="text-sm text-gray-500">2025 - 2009 | 173 Papers | 15825 Qs</p>
+          {!sidebarCollapsed && (
+            <p className="text-sm text-gray-500 dark:text-gray-400">2025 - 2009 | 173 Papers | 15825 Qs</p>
+          )}
         </div>
 
         <div className="space-y-3">
@@ -171,13 +182,14 @@ export default function JEEMainDashboard() {
               <div
                 key={subject.key}
                 onClick={() => setActiveSubject(subject.key)}
-                className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all ${
+                className={`flex items-center ${sidebarCollapsed ? "justify-center" : "justify-between"} p-4 rounded-xl cursor-pointer transition-all ${
                   isActive
-                    ? "bg-gray-800 text-white"
-                    : "bg-white text-gray-900 hover:bg-gray-100 border border-gray-200"
+                    ? "bg-gray-800 dark:bg-gray-700 text-white"
+                    : "bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-600"
                 }`}
+                title={sidebarCollapsed ? subject.name : undefined}
               >
-                <div className="flex items-center gap-3">
+                <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "gap-3"}`}>
                   <div className="w-8 h-8 rounded-lg overflow-hidden">
                     <Image
                       src={subject.icon || "/placeholder.svg"}
@@ -187,17 +199,34 @@ export default function JEEMainDashboard() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <span className="font-medium">{subject.name}</span>
+                  {!sidebarCollapsed && <span className="font-medium">{subject.name}</span>}
                 </div>
-                <ChevronRight className={`w-5 h-5 ${isActive ? "text-white" : "text-gray-400"}`} />
+                {!sidebarCollapsed && (
+                  <ChevronRight className={`w-5 h-5 ${isActive ? "text-white" : "text-gray-400 dark:text-gray-500"}`} />
+                )}
               </div>
             )
           })}
+          <div className="mt-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="w-full justify-center"
+            >
+              <ChevronRight className={`w-4 h-4 transition-transform ${sidebarCollapsed ? "" : "rotate-180"}`} />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-8 relative">
+        {/* Theme Toggle Button */}
+        <div className="absolute top-8 right-8">
+          <ThemeToggle />
+        </div>
+
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -210,9 +239,9 @@ export default function JEEMainDashboard() {
                 className="w-full h-full object-cover"
               />
             </div>
-            <h1 className="text-xl font-semibold text-gray-900">{activeSubject} PYQs</h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{activeSubject} PYQs</h1>
           </div>
-          <p className="text-sm text-gray-500">Chapter-wise Collection of {activeSubject} PYQs</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Chapter-wise Collection of {activeSubject} PYQs</p>
         </div>
 
         {/* Filter Tabs */}
@@ -220,7 +249,10 @@ export default function JEEMainDashboard() {
           {/* Class Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="text-sm border-gray-300 bg-white">
+              <Button
+                variant="outline"
+                className="text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              >
                 Class {filters.classes.length > 0 && `(${filters.classes.length})`}
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
@@ -241,7 +273,10 @@ export default function JEEMainDashboard() {
           {/* Units Filter */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="text-sm border-gray-300 bg-white">
+              <Button
+                variant="outline"
+                className="text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              >
                 Units {filters.units.length > 0 && `(${filters.units.length})`}
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
@@ -259,11 +294,14 @@ export default function JEEMainDashboard() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Status Filter */}
+          {/* Status Filter - Single Selection */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="text-sm border-gray-300 bg-white">
-                Status {filters.status.length > 0 && `(${filters.status.length})`}
+              <Button
+                variant="outline"
+                className="text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              >
+                Status {filters.status && `(${filters.status})`}
                 <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
@@ -271,7 +309,7 @@ export default function JEEMainDashboard() {
               {availableStatuses.map((status) => (
                 <DropdownMenuCheckboxItem
                   key={status}
-                  checked={filters.status.includes(status)}
+                  checked={filters.status === status}
                   onCheckedChange={() => handleFilterChange("status", status)}
                 >
                   {status}
@@ -287,16 +325,13 @@ export default function JEEMainDashboard() {
               checked={filters.weakChapters}
               onCheckedChange={(checked) => handleFilterChange("weakChapters", checked as boolean)}
             />
-            <label htmlFor="weak-chapters" className="text-sm font-medium cursor-pointer">
+            <label htmlFor="weak-chapters" className="text-sm font-medium cursor-pointer dark:text-gray-300">
               Weak Chapters
             </label>
           </div>
 
           {/* Clear Filters */}
-          {(filters.classes.length > 0 ||
-            filters.units.length > 0 ||
-            filters.status.length > 0 ||
-            filters.weakChapters) && (
+          {(filters.classes.length > 0 || filters.units.length > 0 || filters.status || filters.weakChapters) && (
             <Button variant="ghost" size="sm" onClick={clearAllFilters}>
               Clear All
             </Button>
@@ -305,14 +340,14 @@ export default function JEEMainDashboard() {
 
         {/* Chapter Count and Sort */}
         <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Showing {filteredAndSortedChapters.length} chapters ({currentChapters.length} total)
           </p>
 
           <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="text-blue-600 font-medium">
+                <Button variant="ghost" size="sm" className="text-blue-600 dark:text-blue-400 font-medium">
                   <ArrowUpDown className="w-4 h-4 mr-1" />
                   Sort
                 </Button>
@@ -342,16 +377,21 @@ export default function JEEMainDashboard() {
         {/* Chapters List */}
         <div className="space-y-3">
           {filteredAndSortedChapters.map((chapter, index) => (
-            <Card key={index} className="p-4 border border-gray-100 rounded-lg hover:shadow-sm transition-shadow">
+            <Card
+              key={index}
+              className="p-4 border border-gray-100 dark:border-gray-700 rounded-lg hover:shadow-sm transition-shadow bg-white dark:bg-gray-800"
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="text-orange-500 w-6 text-center">{getChapterIcon(chapter.chapter)}</div>
                   <div>
-                    <span className="font-medium text-gray-900">{chapter.chapter}</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{chapter.chapter}</span>
                     {chapter.isWeakChapter && (
-                      <span className="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">Weak</span>
+                      <span className="ml-2 px-2 py-1 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded">
+                        Weak
+                      </span>
                     )}
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                       {chapter.class} • {chapter.unit} • {chapter.status}
                     </div>
                   </div>
@@ -359,15 +399,15 @@ export default function JEEMainDashboard() {
 
                 <div className="flex items-center gap-6 text-sm">
                   <div className="flex items-center gap-4">
-                    <div className="text-gray-600">
+                    <div className="text-gray-600 dark:text-gray-300">
                       <span className="font-medium">2025:</span> {chapter.yearWiseQuestionCount["2025"] || 0}Qs{" "}
                       {getTrendIcon(chapter)}
                     </div>
-                    <div className="text-gray-600">
+                    <div className="text-gray-600 dark:text-gray-300">
                       <span className="font-medium">2024:</span> {chapter.yearWiseQuestionCount["2024"] || 0}Qs
                     </div>
                   </div>
-                  <div className="text-gray-500 min-w-[100px] text-right">
+                  <div className="text-gray-500 dark:text-gray-400 min-w-[100px] text-right">
                     {chapter.questionSolved}/{getTotalQuestions(chapter.yearWiseQuestionCount)} Qs
                   </div>
                 </div>
@@ -378,7 +418,7 @@ export default function JEEMainDashboard() {
 
         {filteredAndSortedChapters.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No chapters match your current filters.</p>
+            <p className="text-gray-500 dark:text-gray-400">No chapters match your current filters.</p>
             <Button variant="outline" className="mt-4" onClick={clearAllFilters}>
               Clear All Filters
             </Button>
